@@ -39,3 +39,13 @@ export const getReleaseTime = async (
     }
   });
 };
+
+export async function getLtsVersion(packageName: string): Promise<null | string> {
+  const stdout = await execute(`npm show ${packageName} dist-tags --json`);
+  if (!stdout) return null;
+
+  const distTags = JSON.parse(stdout) as Record<string, string>;
+  if (!distTags) return null;
+
+  return distTags.lts ?? null;
+}

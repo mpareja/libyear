@@ -2,7 +2,7 @@ import { default as semver } from "semver";
 
 import { calculateDrift, calculatePulse } from "./dates.js";
 import { getDependencies } from "./dependencies.js";
-import { getReleaseTime } from "./release-time.js";
+import { getLtsVersion, getReleaseTime } from './release-time.js';
 import type { Dependencies, PackageManager } from "./types.js";
 import {
   getReleasesByType,
@@ -19,8 +19,8 @@ export const libyear = async (
   Promise.all(
     Array.from((await getDependencies(packageManager, flags)).entries()).map(
       ([dependency, currentVersion]) =>
-        getReleaseTime(packageManager, dependency).then((releaseTimeObj) => {
-          const releaseTimeMap = new Map(Object.entries(releaseTimeObj));
+        getReleaseTime(packageManager, dependency).then(async (releaseTimeObj) => {
+          const releaseTimeMap = await filterAfterLts(dependency, Object.entries(releaseTimeObj));
 
           const allVersionsMap = getSanitisedReleases(releaseTimeMap);
           const stableVersionsMap = getStableReleases(allVersionsMap);
@@ -84,3 +84,17 @@ export const libyear = async (
         }),
     ),
   );
+
+async function filterAfterLts(
+  packageName: string,
+  releaseAndTimeEntries: [string, string][],
+): Promise<Map<string, string>> {
+  const ltsVersion = await getLtsVersion(packageName);
+  const filtered = ltsVersion
+    ? releaseAndTimeEntries.filter(([version]) =>
+        semver.lte(version, ltsVersion)
+      )
+    : releaseAndTimeEntries;
+
+  return new Map(filtered);
+}
