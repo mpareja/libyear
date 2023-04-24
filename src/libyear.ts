@@ -66,6 +66,7 @@ export const libyear = async (
               .find(
                 (version) =>
                   compare(currentVersion, version, {
+                    // @ts-ignore
                     includePrerelease: true,
                   }) < 0,
               ) ?? "N/A";
